@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Манипулятор — Пайтон-симулятор</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Source+Sans+3:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root{--bg:#080c12;--bg2:#0f151e;--bg3:#171f2c;--fg:#dce4ef;--muted:#607088;--accent:#f59e0b;--accent2:#ef4444;--accent3:#22c55e;--border:#1b2636;--card:#111825;--radius:10px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Source Sans 3',sans-serif;background:var(--bg);color:var(--fg);overflow-x:hidden;min-height:100vh}
+h1,h2,h3{font-family:'Orbitron',monospace}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(8,12,18,.95);backdrop-filter:blur(14px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;height:50px}
+.nav-logo{font-family:'Orbitron';font-weight:900;font-size:15px;color:var(--accent);margin-right:28px}
+.nav-tabs{display:flex;gap:2px;flex:1}
+.nav-tab{padding:6px 14px;border-radius:7px;cursor:pointer;font-weight:600;font-size:12px;color:var(--muted);transition:.2s;border:none;background:0;white-space:nowrap}
+.nav-tab:hover{color:var(--fg);background:var(--bg3)}
+.nav-tab.active{color:var(--accent);background:rgba(245,158,11,.1)}
+.section{display:none;padding:60px 18px 40px;max-width:1400px;margin:0 auto}
+.section.active{display:block;animation:fadeUp .3s ease}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.sec-title{font-size:clamp(17px,3vw,22px);font-weight:700;margin:0 0 12px;display:flex;align-items:center;gap:10px}
+.sec-title i{color:var(--accent);font-size:18px}
+.sim-layout{display:grid;grid-template-columns:1fr 1fr;gap:16px;height:calc(100vh - 100px);min-height:500px}
+@media(max-width:900px){.sim-layout{grid-template-columns:1fr;height:auto}}
+.canvas-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.canvas-box canvas{display:block;width:100%;flex:1;min-height:400px}
+.canvas-info{position:absolute;top:8px;left:8px;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;pointer-events:none;line-height:1.5;background:rgba(8,12,18,.8);padding:4px 8px;border-radius:4px}
+.task-bar{position:absolute;bottom:8px;left:8px;right:8px;background:rgba(8,12,18,.9);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:11px;color:var(--fg);line-height:1.4}
+.task-bar h4{font-family:'Orbitron';font-size:11px;color:var(--accent);margin-bottom:3px}
+.task-bar select{background:var(--bg3);color:var(--fg);border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:10px;font-family:'JetBrains Mono';margin-left:6px}
+.ide{display:flex;flex-direction:column;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.ide-header{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border-bottom:1px solid var(--border)}
+.ide-header h3{font-size:12px;color:var(--accent)}
+.ide-btns{display:flex;gap:6px}
+.btn{padding:5px 12px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--fg);font-size:11px;font-weight:600;cursor:pointer;transition:.15s;font-family:'Source Sans 3'}
+.btn:hover{border-color:var(--accent);background:rgba(245,158,11,.08)}
+.btn.run{background:var(--accent3);color:#000;border-color:var(--accent3)}.btn.run:hover{background:#16a34a}
+.btn.stop{background:var(--accent2);color:#fff;border-color:var(--accent2)}.btn.stop:hover{background:#dc2626}
+.editor{flex:1;display:flex;flex-direction:column}
+.editor textarea{flex:1;background:#0a0e14;color:#e2e8f0;font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.6;border:0;outline:0;resize:none;padding:12px;tab-size:4}
+.console{height:120px;background:#060a10;border-top:1px solid var(--border);padding:8px 12px;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);overflow-y:auto;line-height:1.5}
+.console .log{color:#94a3b8}.console .err{color:var(--accent2)}.console .ok{color:var(--accent3)}.console .inf{color:var(--accent)}
+.hero{text-align:center;padding:40px 0 24px;position:relative}
+.hero::before{content:'';position:absolute;top:-60px;left:50%;transform:translateX(-50%);width:500px;height:500px;background:radial-gradient(circle,rgba(245,158,11,.06) 0%,transparent 70%);pointer-events:none}
+.hero h1{font-size:clamp(24px,5vw,44px);font-weight:900;line-height:1.1;margin-bottom:12px}
+.hero h1 span{color:var(--accent)}
+.hero p{font-size:15px;color:var(--muted);max-width:600px;margin:0 auto;line-height:1.5}
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin:20px 0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:18px;transition:.2s}
+.card:hover{border-color:var(--accent);transform:translateY(-2px)}
+.card i.ic{font-size:24px;color:var(--accent);margin-bottom:8px;display:block}
+.card h3{font-family:'Orbitron';font-size:12px;margin-bottom:5px;color:var(--accent)}
+.card p{color:var(--muted);font-size:12px;line-height:1.45}
+table{width:100%;border-collapse:collapse;margin:12px 0;background:var(--card);border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+th{background:var(--bg3);color:var(--accent);font-family:'Orbitron';font-size:10px;padding:8px 10px;text-align:left}
+td{padding:7px 10px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:20px;margin:10px 0}
+.qq{font-size:15px;font-weight:700;margin-bottom:14px;line-height:1.4}
+.qopts{display:flex;flex-direction:column;gap:5px}
+.qopt{padding:9px 12px;border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:.15s;font-size:12px}
+.qopt:hover{border-color:var(--accent);background:rgba(245,158,11,.04)}
+.qopt.crr{border-color:var(--accent3)!important;background:rgba(34,197,94,.08)!important;color:var(--accent3)!important}
+.qopt.wrg{border-color:var(--accent2)!important;background:rgba(239,68,68,.08)!important;color:var(--accent2)!important}
+.qopt.off{pointer-events:none}
+.qexpl{margin-top:8px;padding:8px;background:var(--bg3);border-radius:6px;font-size:11px;color:var(--muted);line-height:1.4;display:none}
+.qexpl.on{display:block}
+.pbar{width:100%;height:5px;background:var(--bg);border-radius:3px;overflow:hidden;margin:4px 0}
+.pfill{height:100%;background:var(--accent);border-radius:3px;transition:.3s}
+.srow{display:flex;gap:8px;margin:6px 0;flex-wrap:wrap}
+.sbox{background:var(--bg3);padding:7px 12px;border-radius:6px;text-align:center;flex:1;min-width:60px}
+.sbox .v{font-family:'Orbitron';font-size:18px;font-weight:700;color:var(--accent)}
+.sbox .l{font-size:9px;color:var(--muted);margin-top:1px}
+.gbox{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:10px;text-align:center;margin:8px 0}
+.gbox .gv{font-family:'Orbitron';font-size:28px;font-weight:900}
+.c5{color:#22c55e}.c4{color:#f59e0b}.c3{color:#fb923c}.c2{color:#ef4444}.c1{color:#991b1b}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:300;display:none;align-items:center;justify-content:center}
+.modal-bg.on{display:flex}
+.modal{background:var(--card);border:1px solid var(--accent);border-radius:12px;padding:22px;max-width:360px;text-align:center}
+.modal h3{font-family:'Orbitron';color:var(--accent);margin-bottom:8px;font-size:15px}
+.modal p{color:var(--muted);margin-bottom:12px;font-size:12px;line-height:1.4}
+.toast{position:fixed;bottom:16px;right:16px;background:var(--card);border:1px solid var(--accent);border-radius:6px;padding:8px 12px;color:var(--fg);font-size:11px;z-index:200;transform:translateY(50px);opacity:0;transition:.2s;display:flex;align-items:center;gap:5px;max-width:260px}
+.toast.on{transform:translateY(0);opacity:1}
+.toast i{color:var(--accent)}
+</style>
+</head>
+<body>
+
+<nav>
+<div class="nav-logo"><i class="fas fa-robot"></i> MANIP</div>
+<div class="nav-tabs" id="navTabs">
+<button class="nav-tab" data-s="theory"><i class="fas fa-book"></i> Теория</button>
+<button class="nav-tab active" data-s="sim"><i class="fas fa-gamepad"></i> Симулятор</button>
+<button class="nav-tab" data-s="quiz"><i class="fas fa-brain"></i> Тест</button>
+</div>
+</nav>
+
+<div class="modal-bg" id="lockModal"><div class="modal"><h3><i class="fas fa-lock"></i> Тестирование</h3><p>Навигация заблокирована.</p><button class="btn" onclick="document.getElementById('lockModal').classList.remove('on')">OK</button></div></div>
+
+<!-- СИМУЛЯТОР -->
+<div class="section active" id="sec-sim">
+<div class="sim-layout">
+<div class="canvas-box">
+<canvas id="cvSim"></canvas>
+<div class="canvas-info" id="cvInfo">X: 0 Y: 0 Z: 0 | Vacuum: OFF</div>
+<div class="task-bar">
+<h4><i class="fas fa-tasks"></i> Задание: <select id="taskSel" onchange="loadTask(this.value)"></select></h4>
+<div id="taskDesc">Выберите задание из списка</div>
+</div>
+</div>
+<div class="ide">
+<div class="ide-header">
+<h3><i class="fas fa-code"></i> Python IDE</h3>
+<div class="ide-btns">
+<button class="btn" onclick="resetSim()"><i class="fas fa-undo"></i> Сброс</button>
+<button class="btn run" id="btnRun" onclick="runCode()"><i class="fas fa-play"></i> Запуск</button>
+<button class="btn stop" id="btnStop" onclick="stopCode()" style="display:none"><i class="fas fa-stop"></i> Стоп</button>
+</div>
+</div>
+<div class="editor">
+<textarea id="codeEd" spellcheck="false"></textarea>
+</div>
+<div class="console" id="conOut"><div class="log">Консоль готова.</div></div>
+</div>
+</div>
+</div>
+
+<!-- ТЕОРИЯ -->
+<div class="section" id="sec-theory">
+<div class="hero">
+<h1>Изучай <span>Манипуляторы</span></h1>
+<p>Декартовый манипулятор с вакуумным захватом управляется командами перемещения по осям X, Y, Z.</p>
+</div>
+<div class="sec-title"><i class="fas fa-terminal"></i> Система команд Python</div>
+<table>
+<tr><th>Команда</th><th>Описание</th><th>Пример</th></tr>
+<tr><td>connect(ip, port)</td><td>Подключение к роботу</td><td>connect("192.168.1.10", 6000)</td></tr>
+<tr><td>moveposition(x, y, z)</td><td>Линейное перемещение (X→Y→Z)</td><td>moveposition(5, 3, 0)</td></tr>
+<tr><td>setposition(x, y, z)</td><td>Быстрый переход (без анимации)</td><td>setposition(0, 0, 10)</td></tr>
+<tr><td>vacuum(state)</td><td>Вакуумный захват (True/False)</td><td>vacuum(True)</td></tr>
+</table>
+<div class="sec-title"><i class="fas fa-th"></i> Правила физики</div>
+<div class="cards-grid">
+<div class="card"><i class="fas fa-route ic"></i><h3>Покомпонентное движение</h3><p>moveposition двигает строго по осям: сначала X, затем Y, затем Z. Диагональные движения запрещены.</p></div>
+<div class="card"><i class="fas fa-magnet ic"></i><h3>Вакуумный захват</h3><p>Захват берет верхний кубик в точке. Отпускает кубик на верх доступного пространства (другого кубика или пол Z=0).</p></div>
+<div class="card"><i class="fas fa-layer-group ic"></i><h3>Стекинг (Горка)</h3><p>Кубики ставятся друг на друга. Чтобы взять нижний, нужно сначала убрать верхний.</p></div>
+<div class="card"><i class="fas fa-shield-alt ic"></i><h3>Безопасность</h3><p>Поднимайте Z перед горизонтальным перемещением, чтобы не столкнуться с кубиками.</p></div>
+</div>
+</div>
+
+<!-- ТЕСТ -->
+<div class="section" id="sec-quiz">
+<div class="sec-title"><i class="fas fa-brain"></i> Тест</div>
+<div class="pbar"><div class="pfill" id="qProg" style="width:0%"></div></div>
+<div class="srow">
+<div class="sbox"><div class="v" id="qAn">0</div><div class="l">Ответено</div></div>
+<div class="sbox"><div class="v" id="qCo">0</div><div class="l">Верно</div></div>
+<div class="sbox"><div class="v" id="qPc">0%</div><div class="l">Точность</div></div>
+</div>
+<div class="gbox" id="qGB" style="display:none"><div class="gv" id="qGV">0</div><div class="l">Оценка (из 5)</div></div>
+<div id="qArea"></div>
+<div style="margin-top:8px;display:flex;gap:6px">
+<button class="btn" id="btnNxt" onclick="nextQ()" style="display:none">Следующий</button>
+<button class="btn" id="btnRstQ" onclick="resetQuiz()" style="display:none">Сброс</button>
+</div>
+</div>
+
+<div class="toast" id="toast"><i class="fas fa-check-circle"></i><span id="toastT"></span></div>
+
+<script>
+function $(id){return document.getElementById(id)}
+function $$(sel){return document.querySelectorAll(sel)}
+var PI=Math.PI;
+function clamp(v,a,b){return v<a?a:v>b?b:v}
+function toast(m){var t=$('toast');$('toastT').textContent=m;t.classList.add('on');clearTimeout(t._t);t._t=setTimeout(function(){t.classList.remove('on')},2200)}
+function sleep(ms){return new Promise(function(r){setTimeout(r,ms)})}
+var quizLock=false;
+
+ $$('.nav-tab').forEach(function(btn){
+    btn.addEventListener('click',function(){
+        if(quizLock&&btn.dataset.s!=='quiz'){$('lockModal').classList.add('on');return}
+        $$('.nav-tab').forEach(function(b){b.classList.remove('active')});
+        btn.classList.add('active');
+        $$('.section').forEach(function(s){s.classList.remove('active')});
+        $('sec-'+btn.dataset.s).classList.add('active');
+        if(btn.dataset.s==='sim')setTimeout(resizeCv,60);
+    });
+});
+
+/* ========================================
+   СИМУЛЯТОР ДЕКАРТОВОГО МАНИПУЛЯТОРА
+   ======================================== */
+var cv=$('cvSim'),ctx=cv.getContext('2d');
+var CW=600,CH=600,GRID=10,cellSz=50,ox=50,oy=50;
+
+var R={x:0,y:0,z:0,vac:false,held:null,running:false,abort:false,speed:2};
+
+var ZONES=[];
+var zoneCoords=[[2,2],[4,2],[6,2],[8,2],[2,4],[4,4],[6,4],[8,4],[2,6],[4,6],[6,6],[8,6]];
+for(var i=0;i<12;i++){ZONES.push({id:'P'+(i+1),x:zoneCoords[i][0],y:zoneCoords[i][1]})}
+
+var cubes=[];
+var targets=[];
+
+/* 10 ЗАДАНИЙ */
+var TASKS=[
+    {id:1,name:'Первый шаг',desc:'Переместите кубик A из P1(2,2) в P7(6,6).',
+        cubes:[{x:2,y:2,z:0,color:'#f59e0b',label:'A'}],
+        targets:[{x:6,y:6,z:0,color:'#f59e0b',label:'A'}],
+        tpl:'# Подключение\nconnect("192.168.1.10", 6000)\n\n# Безопасная высота\nmoveposition(0, 0, 5)\n\n# К кубику A\nmoveposition(2, 2, 5)\nmoveposition(2, 2, 0)\nvacuum(True)\n\n# В цель\nmoveposition(2, 2, 5)\nmoveposition(6, 6, 5)\nmoveposition(6, 6, 0)\nvacuum(False)\n\n# Домой\nmoveposition(6, 6, 5)\nmoveposition(0, 0, 5)\nmoveposition(0, 0, 0)'
+    },
+    {id:2,name:'Два кубика',desc:'Переместите A в P7(6,6), B в P8(8,4).',
+        cubes:[{x:2,y:2,z:0,color:'#f59e0b',label:'A'},{x:4,y:2,z:0,color:'#3b82f6',label:'B'}],
+        targets:[{x:6,y:6,z:0,color:'#f59e0b',label:'A'},{x:8,y:4,z:0,color:'#3b82f6',label:'B'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# TODO: Напишите код перемещения A и B\n'
+    },
+    {id:3,name:'Обмен',desc:'Поменяйте кубики A и B местами. Используйте P5(2,4) как временную зону.',
+        cubes:[{x:2,y:2,z:0,color:'#f59e0b',label:'A'},{x:6,y:6,z:0,color:'#3b82f6',label:'B'}],
+        targets:[{x:6,y:6,z:0,color:'#f59e0b',label:'A'},{x:2,y:2,z:0,color:'#3b82f6',label:'B'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# Подсказка: A -> P5, B -> P1, A -> P7\n'
+    },
+    {id:4,name:'Башня из 2-х',desc:'Поставьте кубик A на кубик B в позиции P7(6,6).',
+        cubes:[{x:2,y:2,z:0,color:'#3b82f6',label:'B'},{x:4,y:2,z:0,color:'#f59e0b',label:'A'}],
+        targets:[{x:6,y:6,z:0,color:'#3b82f6',label:'B'},{x:6,y:6,z:1,color:'#f59e0b',label:'A'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# Сначала B, затем A сверху\n'
+    },
+    {id:5,name:'Высокая башня',desc:'Сложите горку из 3 кубиков (C-B-A снизу вверх) в P7(6,6).',
+        cubes:[{x:2,y:2,z:0,color:'#22c55e',label:'C'},{x:4,y:2,z:0,color:'#3b82f6',label:'B'},{x:6,y:2,z:0,color:'#f59e0b',label:'A'}],
+        targets:[{x:6,y:6,z:0,color:'#22c55e',label:'C'},{x:6,y:6,z:1,color:'#3b82f6',label:'B'},{x:6,y:6,z:2,color:'#f59e0b',label:'A'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# C -> P7, B -> P7, A -> P7\n'
+    },
+    {id:6,name:'Сортировка',desc:'Распределите кубики по цветам: A(Желтый)->P9(2,6), B(Синий)->P11(6,6), C(Зеленый)->P12(8,6).',
+        cubes:[{x:2,y:2,z:0,color:'#22c55e',label:'C'},{x:4,y:2,z:0,color:'#f59e0b',label:'A'},{x:6,y:2,z:0,color:'#3b82f6',label:'B'}],
+        targets:[{x:2,y:6,z:0,color:'#f59e0b',label:'A'},{x:6,y:6,z:0,color:'#3b82f6',label:'B'},{x:8,y:6,z:0,color:'#22c55e',label:'C'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# Найдите каждый кубик и отнесите в свою цель\n'
+    },
+    {id:7,name:'Пирамида',desc:'Постройте пирамиду: B и C на полу (5,6) и (7,6), A сверху (6,6) Z=1.',
+        cubes:[{x:2,y:2,z:0,color:'#3b82f6',label:'B'},{x:4,y:2,z:0,color:'#f59e0b',label:'A'},{x:6,y:2,z:0,color:'#22c55e',label:'C'}],
+        targets:[{x:5,y:6,z:0,color:'#3b82f6',label:'B'},{x:7,y:6,z:0,color:'#22c55e',label:'C'},{x:6,y:6,z:1,color:'#f59e0b',label:'A'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# B и C на этаж, A на крышу\n'
+    },
+    {id:8,name:'Две башни',desc:'Постройте 2 башни: B+A в P9(2,6) и D+C в P11(6,6).',
+        cubes:[{x:2,y:2,z:0,color:'#3b82f6',label:'B'},{x:4,y:2,z:0,color:'#f59e0b',label:'A'},{x:6,y:2,z:0,color:'#a855f7',label:'D'},{x:8,y:2,z:0,color:'#22c55e',label:'C'}],
+        targets:[{x:2,y:6,z:0,color:'#3b82f6',label:'B'},{x:2,y:6,z:1,color:'#f59e0b',label:'A'},{x:6,y:6,z:0,color:'#a855f7',label:'D'},{x:6,y:6,z:1,color:'#22c55e',label:'C'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# Разделите работу на два этапа\n'
+    },
+    {id:9,name:'Разборка',desc:'На позиции P1(2,2) стоит башня C-B-A (снизу вверх). Перенесите кубики на пол: A->P7(6,6), B->P8(8,4), C->P9(2,6).',
+        cubes:[{x:2,y:2,z:0,color:'#22c55e',label:'C'},{x:2,y:2,z:1,color:'#3b82f6',label:'B'},{x:2,y:2,z:2,color:'#f59e0b',label:'A'}],
+        targets:[{x:6,y:6,z:0,color:'#f59e0b',label:'A'},{x:8,y:4,z:0,color:'#3b82f6',label:'B'},{x:2,y:6,z:0,color:'#22c55e',label:'C'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# Важно: снимайте верхний кубик первым!\n'
+    },
+    {id:10,name:'Перестройка',desc:'Башня C-B-A стоит в P1(2,2). Переставьте всю башню целиком в P7(6,6).',
+        cubes:[{x:2,y:2,z:0,color:'#22c55e',label:'C'},{x:2,y:2,z:1,color:'#3b82f6',label:'B'},{x:2,y:2,z:2,color:'#f59e0b',label:'A'}],
+        targets:[{x:6,y:6,z:0,color:'#22c55e',label:'C'},{x:6,y:6,z:1,color:'#3b82f6',label:'B'},{x:6,y:6,z:2,color:'#f59e0b',label:'A'}],
+        tpl:'connect("192.168.1.10", 6000)\n\n# Перестройка требует временного хранения\n'
+    }
+];
+
+function loadTask(id){
+    var t=TASKS.find(function(x){return x.id==id});
+    if(!t)return;
+    $('taskDesc').textContent=t.desc;
+    $('codeEd').value=t.tpl;
+    // Инициализация кубиков
+    cubes=[];
+    t.cubes.forEach(function(c){cubes.push({x:c.x,y:c.y,z:c.z,color:c.color,label:c.label})});
+    targets=t.targets;
+    // Сброс робота
+    R.x=0;R.y=0;R.z=0;R.vac=false;R.held=null;R.abort=true;R.running=false;
+    $('btnRun').style.display='inline-block';$('btnStop').style.display='none';
+    drawScene();
+}
+
+/* Инициализация списка заданий */
+(function(){
+    var sel=$('taskSel');
+    TASKS.forEach(function(t){
+        var opt=document.createElement('option');opt.value=t.id;opt.textContent=t.id+'. '+t.name;
+        sel.appendChild(opt);
+    });
+    loadTask(1);
+})();
+
+function resizeCv(){
+    var wrap=cv.parentElement;if(!wrap)return;
+    var w=wrap.clientWidth;var h=wrap.clientHeight;
+    if(w<100)w=600;if(h<100)h=600;
+    cv.width=w;cv.height=h;CW=w;CH=h;
+    cellSz=Math.min((w-80)/GRID,(h-120)/GRID);
+    ox=(w-cellSz*GRID)/2;oy=(h-cellSz*GRID)/2+10;
+    drawScene();
+}
+
+function toCanvas(gx,gy){return[ox+gx*cellSz,oy+(GRID-gy)*cellSz]}
+
+function drawScene(){
+    var c=ctx;c.clearRect(0,0,CW,CH);
+    c.fillStyle='#0a0e14';c.fillRect(0,0,CW,CH);
+
+    // Сетка
+    c.strokeStyle='#1b2636';c.lineWidth=1;
+    for(var i=0;i<=GRID;i++){
+        var x=ox+i*cellSz,y=oy+i*cellSz;
+        c.beginPath();c.moveTo(x,oy);c.lineTo(x,oy+GRID*cellSz);c.stroke();
+        c.beginPath();c.moveTo(ox,y);c.lineTo(ox+GRID*cellSz,y);c.stroke();
+    }
+
+    // Оси
+    c.strokeStyle='#607088';c.lineWidth=2;
+    var p0=toCanvas(0,0),pX=toCanvas(GRID,0),pY=toCanvas(0,GRID);
+    c.beginPath();c.moveTo(p0[0],p0[1]);c.lineTo(pX[0],pX[1]);c.stroke();
+    c.beginPath();c.moveTo(p0[0],p0[1]);c.lineTo(pY[0],pY[1]);c.stroke();
+    c.fillStyle='#607088';c.font='bold 12px JetBrains Mono';
+    c.textAlign='center';c.textBaseline='middle';
+    c.fillText('X',pX[0]+12,pX[1]);c.fillText('Y',pY[0],pY[1]-12);c.fillText('0',p0[0]-12,p0[1]+12);
+
+    c.font='9px JetBrains Mono';c.fillStyle='#3a4a5a';c.textAlign='center';
+    for(var i=1;i<GRID;i++){var px=toCanvas(i,0);c.fillText(i,px[0],px[1]+14);var py=toCanvas(0,i);c.fillText(i,py[0]-14,py[1])}
+
+    // Целевые зоны (мигающие)
+    var blink=0.3+0.3*Math.sin(Date.now()*0.004);
+    targets.forEach(function(t){
+        var p=toCanvas(t.x,t.y);var sz=cellSz*0.35;
+        var zOff=t.z*6;
+        c.save();c.globalAlpha=blink;
+        c.strokeStyle=t.color;c.lineWidth=2;c.setLineDash([3,3]);
+        c.strokeRect(p[0]-sz,p[1]-sz-zOff,sz*2,sz*2);
+        c.setLineDash([]);
+        if(t.z>0){c.beginPath();c.moveTo(p[0]+sz,p[1]-sz-zOff);c.lineTo(p[0]+sz,p[1]-sz);c.strokeStyle='rgba(255,255,255,0.1)';c.stroke()}
+        c.font='8px Orbitron';c.fillStyle=t.color;c.textAlign='left';
+        c.fillText(t.label+(t.z>0?' Z:'+t.z:''),p[0]+sz+4,p[1]-sz-zOff+6);
+        c.restore();
+    });
+
+    // Позиции P1-P12
+    c.font='8px Orbitron';c.fillStyle='#2a3a4a';c.textAlign='center';c.textBaseline='middle';
+    ZONES.forEach(function(z){
+        var p=toCanvas(z.x,z.y);
+        c.beginPath();c.arc(p[0],p[1],2,0,PI*2);c.fill();
+        c.fillText(z.id,p[0],p[1]+cellSz*0.38);
+    });
+
+    // Кубики (не захваченные) — рисуем снизу вверх
+    var sortedCubes=cubes.filter(function(cb){return R.held!==cb}).sort(function(a,b){return a.z-b.z});
+    sortedCubes.forEach(function(cb){
+        var p=toCanvas(cb.x,cb.y);
+        var sz=cellSz*0.3;
+        var zOff=cb.z*6;
+        // Тень на полу
+        c.fillStyle='rgba(0,0,0,0.2)';c.fillRect(p[0]-sz+3,p[1]-sz+3,sz*2,sz*2);
+        // Кубик
+        c.fillStyle=cb.color;c.fillRect(p[0]-sz,p[1]-sz-zOff,sz*2,sz*2);
+        c.strokeStyle='rgba(255,255,255,0.2)';c.lineWidth=1;c.strokeRect(p[0]-sz,p[1]-sz-zOff,sz*2,sz*2);
+        // Буква
+        c.font='bold 11px Orbitron';c.fillStyle='#000';c.textAlign='center';c.textBaseline='middle';
+        c.fillText(cb.label,p[0],p[1]-zOff);
+        // Высотная линия
+        if(cb.z>0){
+            c.beginPath();c.moveTo(p[0]+sz+2,p[1]-sz-zOff);c.lineTo(p[0]+sz+2,p[1]-sz);
+            c.strokeStyle='rgba(255,255,255,0.1)';c.lineWidth=1;c.stroke();
+        }
+    });
+
+    // Робот
+    var rp=toCanvas(R.x,R.y);
+    var zOffR=R.z*6;
+    // Направляющие
+    c.strokeStyle='#252f3e';c.lineWidth=2;
+    c.beginPath();c.moveTo(ox,rp[1]-zOffR);c.lineTo(ox+GRID*cellSz,rp[1]-zOffR);c.stroke();
+    c.beginPath();c.moveTo(rp[0]-zOffR,oy);c.lineTo(rp[0]-zOffR,oy+GRID*cellSz);c.stroke();
+    // Тень на полу
+    c.beginPath();c.arc(rp[0],rp[1],8,0,PI*2);c.fillStyle='rgba(245,158,11,0.1)';c.fill();
+    // Штанга Z
+    if(R.z>0){
+        c.beginPath();c.moveTo(rp[0],rp[1]);c.lineTo(rp[0]-zOffR,rp[1]-zOffR);
+        c.strokeStyle='rgba(245,158,11,0.3)';c.lineWidth=2;c.setLineDash([3,3]);c.stroke();c.setLineDash([]);
+    }
+    // Головка
+    c.beginPath();c.arc(rp[0]-zOffR,rp[1]-zOffR,10,0,PI*2);
+    c.fillStyle=R.vac?'#22c55e':'#f59e0b';c.fill();
+    c.strokeStyle='#fff';c.lineWidth=2;c.stroke();
+    // Захваченный кубик на головке
+    if(R.held){
+        var cb=R.held;var sz=cellSz*0.25;
+        c.fillStyle=cb.color;c.fillRect(rp[0]-zOffR-sz,rp[1]-zOffR+12,sz*2,sz*2);
+        c.font='bold 9px Orbitron';c.fillStyle='#000';c.textAlign='center';c.textBaseline='middle';c.fillText(cb.label,rp[0]-zOffR,rp[1]-zOffR+12);
+    }
+
+    // Шкала Z
+    var zBarX=ox+GRID*cellSz+12,zBarY=oy,zBarH=GRID*cellSz;
+    c.fillStyle='#1b2636';c.fillRect(zBarX,zBarY,12,zBarH);
+    var zFill=clamp(R.z/10,0,1);
+    c.fillStyle='#f59e0b';c.fillRect(zBarX,zBarY+zBarH*(1-zFill),12,zBarH*zFill);
+    c.strokeStyle='#3a4a5a';c.lineWidth=1;c.strokeRect(zBarX,zBarY,12,zBarH);
+    c.font='9px JetBrains Mono';c.fillStyle='#607088';c.textAlign='left';
+    c.fillText('Z:'+R.z.toFixed(1),zBarX+16,zBarY+zBarH*(1-zFill)+4);
+
+    $('cvInfo').textContent='X: '+R.x.toFixed(1)+' Y: '+R.y.toFixed(1)+' Z: '+R.z.toFixed(1)+' | Vacuum: '+(R.vac?'ON':'OFF')+(R.held?' ['+R.held.label+']':'');
+}
+
+function animateMove(tx,ty,tz){
+    return new Promise(function(resolve){
+        function step(){
+            if(R.abort){resolve();return}
+            var done=true;
+            if(Math.abs(R.x-tx)>0.05){R.x+=Math.sign(tx-R.x)*Math.min(R.speed*0.05,Math.abs(tx-R.x));done=false}else{R.x=tx}
+            if(Math.abs(R.y-ty)>0.05){R.y+=Math.sign(ty-R.y)*Math.min(R.speed*0.05,Math.abs(ty-R.y));done=false}else{R.y=ty}
+            if(Math.abs(R.z-tz)>0.05){R.z+=Math.sign(tz-R.z)*Math.min(R.speed*0.05,Math.abs(tz-R.z));done=false}else{R.z=tz}
+            drawScene();
+            if(done){R.x=tx;R.y=ty;R.z=tz;drawScene();resolve()}
+            else{requestAnimationFrame(step)}
+        }
+        step();
+    });
+}
+
+function moveAxisByAxis(tx,ty,tz){
+    return new Promise(async function(resolve){
+        if(R.abort){resolve();return}
+        if(R.x!==tx){await animateMove(tx,R.y,R.z);if(R.abort){resolve();return}}
+        if(R.y!==ty){await animateMove(R.x,ty,R.z);if(R.abort){resolve();return}}
+        if(R.z!==tz){await animateMove(R.x,R.y,tz);if(R.abort){resolve();return}}
+        resolve();
+    });
+}
+
+function log(msg,cls){var c=$('conOut');c.innerHTML+='<div class="'+(cls||'log')+'">'+msg+'</div>';c.scrollTop=c.scrollHeight}
+
+async function executeLine(line){
+    if(R.abort)return;
+    line=line.trim();
+    if(!line||line.startsWith('#'))return;
+
+    var m=line.match(/^connect\s*\(\s*"([^"]+)"\s*,\s*(\d+)\s*\)$/);
+    if(m){log('Подключение к '+m[1]+':'+m[2]+'...','inf');await sleep(600);log('OK','ok');return}
+
+    m=line.match(/^moveposition\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
+    if(m){
+        var tx=parseFloat(m[1]),ty=parseFloat(m[2]),tz=parseFloat(m[3]);
+        log('move('+tx+', '+ty+', '+tz+')','inf');
+        await moveAxisByAxis(tx,ty,tz);return;
+    }
+
+    m=line.match(/^setposition\s*\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)\s*\)$/i);
+    if(m){
+        var tx=parseFloat(m[1]),ty=parseFloat(m[2]),tz=parseFloat(m[3]);
+        log('set('+tx+', '+ty+', '+tz+')','inf');
+        R.x=tx;R.y=ty;R.z=tz;drawScene();await sleep(150);return;
+    }
+
+    m=line.match(/^vacuum\s*\(\s*(True|False)\s*\)$/i);
+    if(m){
+        var state=m[1].toLowerCase()==='true';
+        log('vacuum('+(state?'True':'False')+')','inf');
+        R.vac=state;
+        if(state){
+            // Найти верхний кубик в точке
+            var cands=cubes.filter(function(cb){return Math.abs(cb.x-R.x)<0.5&&Math.abs(cb.y-R.y)<0.5&&Math.abs(cb.z-R.z)<0.5});
+            cands.sort(function(a,b){return b.z-a.z});
+            if(cands.length>0){R.held=cands[0];log('Захвачен '+R.held.label,'ok')}
+            else{log('Вакуум включён, но под захватом пусто','err')}
+        }else{
+            if(R.held){
+                // Найти максимальный Z в этой точке среди других кубиков
+                var maxZ=0;
+                cubes.forEach(function(cb){
+                    if(cb!==R.held&&Math.abs(cb.x-R.x)<0.5&&Math.abs(cb.y-R.y)<0.5){
+                        if(cb.z>=maxZ)maxZ=cb.z+1;
+                    }
+                });
+                R.held.x=Math.round(R.x);R.held.y=Math.round(R.y);R.held.z=Math.max(0,maxZ);
+                log('Отпущен '+R.held.label+' в Z='+R.held.z,'ok');
+                R.held=null;
+            }else{log('Вакуум выключен','inf')}
+        }
+        drawScene();await sleep(150);return;
+    }
+
+    log('Неизвестная команда: '+line,'err');
+}
+
+async function runCode(){
+    if(R.running)return;
+    var code=$('codeEd').value;
+    var lines=code.split('\n');
+    R.running=true;R.abort=false;
+    $('btnRun').style.display='none';$('btnStop').style.display='inline-block';
+    $('conOut').innerHTML='';log('Запуск...','inf');
+
+    for(var i=0;i<lines.length;i++){
+        if(R.abort)break;
+        await executeLine(lines[i]);
+    }
+
+    if(!R.abort){
+        log('Программа завершена.','ok');
+        // Проверка результата
+        var allOk=true;
+        targets.forEach(function(t){
+            var found=cubes.find(function(cb){return cb.label===t.label&&Math.abs(cb.x-t.x)<0.5&&Math.abs(cb.y-t.y)<0.5&&Math.abs(cb.z-t.z)<0.5});
+            if(!found)allOk=false;
+        });
+        if(allOk)log('ЗАДАНИЕ ВЫПОЛНЕНО!','ok');
+        else log('Задание НЕ выполнено. Проверьте позиции кубиков.','err');
+    }else{
+        log('Программа прервана.','err');
+    }
+
+    R.running=false;R.abort=false;
+    $('btnRun').style.display='inline-block';$('btnStop').style.display='none';
+}
+
+function stopCode(){R.abort=true}
+
+function resetSim(){
+    var sel=$('taskSel');
+    loadTask(sel.value);
+    toast('Симулятор сброшен');
+}
+
+function renderLoop(){drawScene();requestAnimationFrame(renderLoop)}
+
+setTimeout(function(){resizeCv();renderLoop()},100);
+window.addEventListener('resize',resizeCv);
+
+/* ========================================
+   ТЕСТ
+   ======================================== */
+var _K=[0x5a,0x3c,0x7e,0x1f,0x6b,0x4d,0x2a,0x8e,0x55,0x33];
+var _A=[0x5a^2,0x3c^1,0x7e^1,0x1f^0,0x6b^2,0x4d^1,0x2a^1,0x8e^0,0x55^1,0x33^1];
+function ans(i){return _A[i]^_K[i]}
+
+var QS=[
+    {q:'Сколько степеней свободы у декартова манипулятора?',o:['2','3','4','6'],e:'3 поступательных оси: X, Y, Z.'},
+    {q:'Какой манипулятор перемещается только по прямым линиям?',o:['Антропоморфный','Декартов','Сферический','SCARA'],e:'Декартов двигается строго по осям X, Y, Z.'},
+    {q:'Вакуумный захват используется для:',o:['Тяжелых деталей','Плоских гладких поверхностей','Сварки','Вращения'],e:'Вакуумная присоска требует гладкую поверхность.'},
+    {q:'moveposition двигает робота:',o:['По диагонали','По дуге','Строго по осям X→Y→Z','Вращением'],e:'Последовательно: сначала X, затем Y, затем Z.'},
+    {q:'Для чего поднимать Z перед горизонтальным перемещением?',o:['Для ускорения','Для обхода препятствий','Для экономии энергии','Для калибровки'],e:'Поднятие Z обеспечивает безопасный проход над кубиками.'},
+    {q:'Какой порт используется для подключения в примере?',o:['80','443','6000','22'],e:'Порт 6000.'},
+    {q:'Что делает vacuum(False)?',o:['Включает захват','Отключает вакуум и отпускает кубик','Перемещает робота','Калибрует оси'],e:'vacuum(False) отключает вакуум и отпускает кубик.'},
+    {q:'Как поставить кубик друг на друга?',o:['Просто отпустить на Z=0','Отпустить на Z, равном количеству кубиков внизу','Нельзя','Использовать setposition'],e:'Кубик ставится на Z = (количество кубиков ниже).'},
+    {q:'Рабочая зона декартова манипулятора имеет форму:',o:['Сферы','Цилиндра','Прямоугольного параллелепипеда','Конуса'],e:'Прямоугольный параллелепипед, образованный ходами по X, Y, Z.'},
+    {q:'Что произойдет при vacuum(True), если под захватом нет кубика?',o:['Ошибка','Захват пуст','Вакуум включится, но кубика не будет','Робот сломается'],e:'Вакуум включится, но ничего не захватится.'}
+];
+
+var QS_st={cur:0,ans:0,ok:0,set:{}};
+
+function renderQ(){
+    var q=QS[QS_st.cur],area=$('qArea');
+    var h='<div class="qcard"><div style="font-size:10px;color:var(--muted);margin-bottom:4px">Вопрос '+(QS_st.cur+1)+' из '+QS.length+'</div>';
+    h+='<div class="qq">'+q.q+'</div><div class="qopts">';
+    q.o.forEach(function(opt,i){
+        var dis=QS_st.set.hasOwnProperty(QS_st.cur)?' off':'';
+        h+='<div class="qopt'+dis+'" data-i="'+i+'">'+String.fromCharCode(65+i)+') '+opt+'</div>';
+    });
+    h+='</div><div class="qexpl'+(QS_st.set.hasOwnProperty(QS_st.cur)?' on':'')+'">'+q.e+'</div></div>';
+    area.innerHTML=h;
+    area.querySelectorAll('.qopt:not(.off)').forEach(function(el){el.addEventListener('click',function(){answerQ(+el.dataset.i)})});
+    if(QS_st.set.hasOwnProperty(QS_st.cur)){
+        var c=ans(QS_st.cur),u=QS_st.set[QS_st.cur];
+        area.querySelectorAll('.qopt').forEach(function(el,i){if(i===c)el.classList.add('crr');if(i===u&&u!==c)el.classList.add('wrg')});
+    }
+    $('btnNxt').style.display=QS_st.set.hasOwnProperty(QS_st.cur)?'inline-block':'none';
+    $('btnRstQ').style.display=QS_st.ans>0?'inline-block':'none';
+}
+
+function answerQ(idx){
+    if(QS_st.set.hasOwnProperty(QS_st.cur))return;
+    QS_st.set[QS_st.cur]=idx;QS_st.ans++;
+    var correct=ans(QS_st.cur),ok=idx===correct;if(ok)QS_st.ok++;
+    if(!quizLock){quizLock=true;$$('.nav-tab').forEach(function(t){if(t.dataset.s!=='quiz')t.classList.add('locked')})}
+    var area=$('qArea');
+    area.querySelectorAll('.qopt').forEach(function(el,i){el.classList.add('off');if(i===correct)el.classList.add('crr');if(i===idx&&!ok)el.classList.add('wrg')});
+    area.querySelector('.qexpl').classList.add('on');
+    $('btnNxt').style.display='inline-block';
+    $('qAn').textContent=QS_st.ans;$('qCo').textContent=QS_st.ok;
+    $('qPc').textContent=Math.round(QS_st.ok/QS_st.ans*100)+'%';
+    $('qProg').style.width=(QS_st.ans/QS.length*100)+'%';
+    updateQG();
+    if(QS_st.ans>=QS.length){quizLock=false;$$('.nav-tab').forEach(function(t){t.classList.remove('locked')});toast('Тест завершён!')}
+}
+
+function updateQG(){
+    if(QS_st.ans===0){$('qGB').style.display='none';return}
+    var g=Math.round(QS_st.ok/QS.length*5*10)/10;
+    var cls=g>=4.5?'c5':g>=3.5?'c4':g>=2.5?'c3':g>=1.5?'c2':'c1';
+    $('qGV').textContent=g.toFixed(1);$('qGV').className='gv '+cls;$('qGB').style.display='block';
+}
+
+function nextQ(){
+    for(var i=1;i<=QS.length;i++){var idx=(QS_st.cur+i)%QS.length;if(!QS_st.set.hasOwnProperty(idx)){QS_st.cur=idx;renderQ();return}}
+    toast('Все вопросы ответены!');
+}
+
+function resetQuiz(){
+    QS_st={cur:0,ans:0,ok:0,set:{}};quizLock=false;
+    $$('.nav-tab').forEach(function(t){t.classList.remove('locked')});
+    $('qAn').textContent='0';$('qCo').textContent='0';$('qPc').textContent='0%';
+    $('qProg').style.width='0%';$('btnRstQ').style.display='none';
+    $('qGB').style.display='none';renderQ();toast('Тест сброшен');
+}
+
+renderQ();
+</script>
+</body>
+</html>
